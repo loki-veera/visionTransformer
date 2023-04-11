@@ -25,6 +25,24 @@ def lint(session):
     session.run("flake8", "src", "tests", "noxfile.py")
 
 
+@nox.session(name="typing")
+def mypy(session):
+    """Check type hints."""
+    session.install("-r", "requirements.txt")
+    session.install("mypy")
+    session.run(
+        "mypy",
+        "--install-types",
+        "--non-interactive",
+        "--ignore-missing-imports",
+        "--no-strict-optional",
+        "--no-warn-return-any",
+        "--implicit-reexport",
+        "--allow-untyped-calls",
+        "src",
+    )
+
+
 @nox.session(name="format")
 def format(session):
     """Fix common convention problems automatically."""

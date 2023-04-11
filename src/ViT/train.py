@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch import utils
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -9,19 +10,42 @@ from tqdm import tqdm
 from .model.vit import ViT
 
 
-def create_patches(batch, patch_res=4):
-    """Compute the patches."""
+def create_patches(batch: torch.Tensor, patch_res: int = 4) -> torch.Tensor:
+    """Compute the patches of the batch.
+
+    Args:
+        batch (torch.tensor): Tensor containing the batch of images.
+        patch_res (int, optional): Resolution of each patch. Defaults to 4.
+
+    Returns:
+        torch.tensor: Tensor containing the patches of each image.
+    """
     bs, channels, height, width = batch.shape
     num_patches = (height * width) // (patch_res**2)
     patch_size = (patch_res**2) * channels
     return torch.reshape(batch, (bs, num_patches, patch_size))
 
 
-def evaluate(model, device, loader, loss):
-    """Compute the test accuracies."""
+def evaluate(
+    model: nn.Module,
+    device: torch.device,
+    loader: utils.data.DataLoader,
+    loss: nn.Module,
+) -> tuple:
+    """Compute the test accuracies.
+
+    Args:
+        model (nn.Module): Transformer model.
+        device (torch.device): torch device either cuda or cpu.
+        loader (utils.DataLoader): Test loader.
+        loss (nn.Module): Loss function.
+
+    Returns:
+        tuple: tuple containing testloss and accuracy
+    """
     model.eval()
-    test_loss = 0
-    correct = 0
+    test_loss = 0.0
+    correct = 0.0
     total_imgs = 0
     with torch.no_grad():
         for data, target in loader:
@@ -36,8 +60,25 @@ def evaluate(model, device, loader, loss):
     return test_loss, 100.0 * acc
 
 
-def train(model, device, loader, criterion, optimizer):
-    """Training loop."""
+def train(
+    model: nn.Module,
+    device: torch.device,
+    loader: utils.data.DataLoader,
+    criterion: nn.Module,
+    optimizer: torch.optim.Optimizer,
+) -> float:
+    """Training loop.
+
+    Args:
+        model (nn.Module): Transformer model.
+        device (torch.device): torch device either cuda or cpu.
+        loader (DataLoader): Train loader.
+        criterion (nn.Module): Loss function.
+        optimizer (torch.optim): Optimizer function.
+
+    Returns:
+        float: Loss value for the epoch.
+    """
     model.train()
     total_loss = 0.0
     total_imgs = 0
@@ -59,7 +100,7 @@ def train(model, device, loader, criterion, optimizer):
 
 
 def main():
-    """Training and eval loop."""
+    """Training and evaluation loop."""
     num_epochs = 5
     bs = 100
     patch_res = 4  # Resolution of each patch

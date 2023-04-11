@@ -14,6 +14,7 @@ ignore =
     E402 # allow path extensions for testing.
     DAR101
     DAR201
+    DAR103
     N400 # flake and pylance disagree on linebreaks in strings.
     #Must be removed later
     D100

@@ -5,7 +5,23 @@ from .mhsa import MultiHeadSelfAttention
 
 
 class ViT(nn.Module):
-    def __init__(self, d_model, n_patches, n_encoders, n_heads, patch_res) -> None:
+    def __init__(
+        self,
+        d_model: int,
+        n_patches: int,
+        n_encoders: int,
+        n_heads: int,
+        patch_res: int,
+    ) -> None:
+        """Initialize the transformer model.
+
+        Args:
+            d_model (int): Model dimension.
+            n_patches (int): Number of patches of an image.
+            n_encoders (int): Number of encoders.
+            n_heads (int): Number of attention heads.
+            patch_res (int): Resolution of each patch.
+        """
         super().__init__()
         self.linear_embed = nn.Linear(patch_res * patch_res, d_model)
         self.class_token = nn.Parameter(torch.rand(1, d_model))
@@ -17,19 +33,37 @@ class ViT(nn.Module):
         )
         self.final_linear = nn.Linear(d_model, 10)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass for the model.
+
+        Args:
+            x (torch.tensor): Input tensor.
+
+        Returns:
+            torch.tensor: Softmax probabilities of classes.
+        """
         linear_maps = self.linear_embed(x)
         inputs = torch.cat(
             (self.class_token.expand(x.shape[0], 1, -1), linear_maps), dim=1
         )
-        inputs += self.pos_embed.repeat(x.shape[0], 1, 1)
+        pos_embeds = self.pos_embed.repeat(x.shape[0], 1, 1)
+        inputs += pos_embeds
         output = inputs
         for encoder in self.encoders:
             output = encoder(output)
         output = self.final_linear(output[:, 0])
         return nn.functional.softmax(output, dim=-1)
 
-    def __positional_encoding(self, max_seq_length, d_model):
+    def __positional_encoding(self, max_seq_length: int, d_model: int) -> torch.Tensor:
+        """Get the positional encoding values.
+
+        Args:
+            max_seq_length (int): Maximum sequence length.
+            d_model (int): Model dimension.
+
+        Returns:
+            torch.tensor: Positional encoding values.
+        """
         pos_matrix = torch.zeros(max_seq_length, d_model, requires_grad=False)
         for seq_index in range(0, max_seq_length):
             for index in range(0, d_model // 2):
@@ -42,7 +76,13 @@ class ViT(nn.Module):
 
 
 class ViTEncoder(nn.Module):
-    def __init__(self, d_model, n_heads) -> None:
+    def __init__(self, d_model: int, n_heads: int) -> None:
+        """Initialize the encoder block.
+
+        Args:
+            d_model (int): Model dimension.
+            n_heads (int): Number of attention heads.
+        """
         super().__init__()
         self.attention = MultiHeadSelfAttention(d_model, n_heads)
         self.layer_norm = nn.LayerNorm(d_model)
@@ -55,7 +95,15 @@ class ViTEncoder(nn.Module):
             nn.GELU(),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass for the encoder.
+
+        Args:
+            x (torch.tensor): Input embedding for the encoder.
+
+        Returns:
+            torch.tensor: Output of the encoder.
+        """
         x = self.layer_norm(x + self.attention(x, x, x))
         x = self.layer_norm(x + self.linear_layer(x))
         return x
