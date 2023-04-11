@@ -1,0 +1,42 @@
+#########################
+# Flake8 Configuration  #
+# (.flake8)             #
+#########################
+[flake8]
+ignore =
+    S101 # asserts are ok when testing.
+    S301 # pickle
+    S403 # pickle
+    S404
+    S603
+    W503 # Line break before binary operator (flake8 is wrong)
+    E203 # Ignore the spaces black puts before columns.
+    E402 # allow path extensions for testing.
+    DAR101
+    DAR201
+    N400 # flake and pylance disagree on linebreaks in strings.
+    #Must be removed later
+    D100
+    D101
+    D102
+    D107
+exclude =
+    .tox,
+    .git,
+    __pycache__,
+    docs/source/conf.py,
+    build,
+    dist,
+    tests/fixtures/*,
+    *.pyc,
+    *.bib,
+    *.egg-info,
+    .cache,
+    .eggs,
+    data.
+max-line-length = 120
+max-complexity = 20
+import-order-style = pycharm
+application-import-names =
+    seleqt
+    tests

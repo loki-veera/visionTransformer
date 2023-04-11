@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import numpy as np
 from torch.nn.functional import softmax
 
 
@@ -20,7 +19,7 @@ class MultiHeadSelfAttention(nn.Module):
         q = q.reshape(bs, tokens, self.n_heads, self.d_k)
         k = k.reshape(bs, tokens, self.n_heads, self.d_k)
         v = v.reshape(bs, tokens, self.n_heads, self.d_k)
-         # Project the data using respective linear layers
+        # Project the data using respective linear layers
         q = torch.einsum("ijkl -> ikjl", [self.linear_q(q)])
         k = torch.einsum("ijkl -> ikjl", [self.linear_k(k)])
         v = torch.einsum("ijkl -> ikjl", [self.linear_v(v)])
@@ -36,10 +35,9 @@ class MultiHeadSelfAttention(nn.Module):
         # Compute the dot product
         dot_product = torch.einsum("...kl, ...rl -> ...kr", [q, k])
         # Scale the dot product
-        dot_product = dot_product / (self.d_k)**0.5
+        dot_product = dot_product / (self.d_k) ** 0.5
         # Compute the softmax and multiply with values
         attention_weights = torch.einsum(
             "ijkl, ijlr -> ikjr", [softmax(dot_product, dim=-1), v]
         )
         return attention_weights
-
