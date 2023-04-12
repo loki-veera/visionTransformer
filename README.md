@@ -15,15 +15,12 @@ To run the training code, run the following code
 ```
 python -m src.ViT.train
 ```
+To counter overfitting, L2 penalty is applied with Adam optimizer with decay value of 0.003, also dropout with a probability of 0.3 is applied.
 
 ## Results
 | Dataset | Accuracy | #Epochs |
 |---------|----------|---------|
-| MNIST   |          |         |
+| MNIST   |   92%    |   30    |
 
 ## References
 1. Dosovitskiy, Alexey, et al. "An image is worth 16x16 words: Transformers for image recognition at scale." arXiv preprint arXiv:2010.11929 (2020).
-
-## TODO:
-- [ ] Add learned positional emebeddings
-- [ ] Add CIFAR-10 results

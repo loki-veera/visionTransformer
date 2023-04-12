@@ -101,9 +101,10 @@ def train(
 
 def main():
     """Training and evaluation loop."""
-    num_epochs = 5
+    num_epochs = 30
     bs = 100
     patch_res = 4  # Resolution of each patch
+    torch.manual_seed(21)
 
     mnist_trainset = MNIST(
         "./data",
@@ -133,7 +134,7 @@ def main():
             nn.init.xavier_uniform_(p)
 
     print(f"Using device: {device}")
-    optimizer = Adam(model.parameters(), lr=0.0001, weight_decay=0.03)
+    optimizer = Adam(model.parameters(), lr=0.0001, weight_decay=0.003)
     criterion = nn.CrossEntropyLoss()
 
     for epoch in range(num_epochs):
