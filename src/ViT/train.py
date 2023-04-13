@@ -10,12 +10,12 @@ from tqdm import tqdm
 from .model.vit import ViT
 
 
-def create_patches(batch: torch.Tensor, patch_res: int = 4) -> torch.Tensor:
+def create_patches(batch: torch.Tensor, patch_res: int) -> torch.Tensor:
     """Compute the patches of the batch.
 
     Args:
         batch (torch.tensor): Tensor containing the batch of images.
-        patch_res (int, optional): Resolution of each patch. Defaults to 4.
+        patch_res (int, optional): Resolution of each patch.
 
     Returns:
         torch.tensor: Tensor containing the patches of each image.
@@ -31,6 +31,7 @@ def evaluate(
     device: torch.device,
     loader: utils.data.DataLoader,
     loss: nn.Module,
+    patch_res: int,
 ) -> tuple:
     """Compute the test accuracies.
 
@@ -39,6 +40,7 @@ def evaluate(
         device (torch.device): torch device either cuda or cpu.
         loader (utils.DataLoader): Test loader.
         loss (nn.Module): Loss function.
+        patch_res (int): Resolution of each patch.
 
     Returns:
         tuple: tuple containing testloss and accuracy
@@ -50,7 +52,7 @@ def evaluate(
     with torch.no_grad():
         for data, target in loader:
             data, target = data.to(device), target.to(device)
-            data = create_patches(data)
+            data = create_patches(data, patch_res)
             preds = model(data)
             test_loss += loss(preds, target).item()
             correct += torch.sum(torch.argmax(preds, dim=1) == target).item()
@@ -66,6 +68,7 @@ def train(
     loader: utils.data.DataLoader,
     criterion: nn.Module,
     optimizer: torch.optim.Optimizer,
+    patch_res: int,
 ) -> float:
     """Training loop.
 
@@ -75,6 +78,7 @@ def train(
         loader (DataLoader): Train loader.
         criterion (nn.Module): Loss function.
         optimizer (torch.optim): Optimizer function.
+        patch_res (int): Resolution of each patch.
 
     Returns:
         float: Loss value for the epoch.
@@ -85,7 +89,7 @@ def train(
     for img, labels in tqdm(loader, total=len(list(loader))):
         img = img.to(device)
         labels = labels.to(device)
-        img = create_patches(img)
+        img = create_patches(img, patch_res)
         optimizer.zero_grad()
 
         pred = model(img)
@@ -104,6 +108,11 @@ def main():
     num_epochs = 30
     bs = 100
     patch_res = 4  # Resolution of each patch
+    d_model = 64
+    n_patches = 7
+    n_encoders = 2
+    n_heads = 8
+    learning_rate = 0.0001
     torch.manual_seed(21)
 
     mnist_trainset = MNIST(
@@ -126,7 +135,14 @@ def main():
     trainloader = DataLoader(mnist_trainset, batch_size=bs, shuffle=True)
     valloader = DataLoader(mnist_valset, batch_size=bs, shuffle=False)
 
-    model = ViT(d_model=64, n_patches=7, n_encoders=2, n_heads=8, patch_res=patch_res)
+    model = ViT(
+        d_model=d_model,
+        n_patches=n_patches,
+        n_encoders=n_encoders,
+        n_heads=n_heads,
+        patch_res=patch_res,
+        n_channels=1,
+    )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     for p in model.parameters():
@@ -134,13 +150,13 @@ def main():
             nn.init.xavier_uniform_(p)
 
     print(f"Using device: {device}")
-    optimizer = Adam(model.parameters(), lr=0.0001, weight_decay=0.003)
+    optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=0.003)
     criterion = nn.CrossEntropyLoss()
 
     for epoch in range(num_epochs):
         print(f"Epoch: {epoch}")
-        train_loss = train(model, device, trainloader, criterion, optimizer)
-        val_loss, acc = evaluate(model, device, valloader, criterion)
+        train_loss = train(model, device, trainloader, criterion, optimizer, patch_res)
+        val_loss, acc = evaluate(model, device, valloader, criterion, patch_res)
         print(
             f"Training loss: {train_loss}, Validation loss: {val_loss}, Validation accuracy: {acc}"
         )

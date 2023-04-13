@@ -12,6 +12,8 @@ class ViT(nn.Module):
         n_encoders: int,
         n_heads: int,
         patch_res: int,
+        n_channels: int,
+        out_classes: int = 10,
     ) -> None:
         """Initialize the transformer model.
 
@@ -21,17 +23,22 @@ class ViT(nn.Module):
             n_encoders (int): Number of encoders.
             n_heads (int): Number of attention heads.
             patch_res (int): Resolution of each patch.
+            n_channels (int): Number of channels
+            out_classes (int): Number of classes. Defaults to 10.
         """
         super().__init__()
-        self.linear_embed = nn.Linear(patch_res * patch_res, d_model)
+        self.linear_embed = nn.Linear(patch_res * patch_res * n_channels, d_model)
         self.class_token = nn.Parameter(torch.rand(1, d_model))
         self.pos_embed = nn.Parameter(
             torch.randn(n_patches**2 + 1, d_model), requires_grad=True
         )
+        self.pos_values = nn.Parameter(
+            torch.arange(0, n_patches**2 + 1), requires_grad=False
+        )
         self.encoders = nn.ModuleList(
             [ViTEncoder(d_model, n_heads) for _ in range(n_encoders)]
         )
-        self.final_linear = nn.Linear(d_model, 10)
+        self.final_linear = nn.Linear(d_model, out_classes)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass for the model.
@@ -46,7 +53,9 @@ class ViT(nn.Module):
         inputs = torch.cat(
             (self.class_token.expand(x.shape[0], 1, -1), linear_maps), dim=1
         )
-        pos_embeds = self.pos_embed.repeat(x.shape[0], 1, 1)
+        pos_embeds = torch.einsum(
+            "i, ij -> ij", self.pos_values, self.pos_embed
+        ).repeat(x.shape[0], 1, 1)
         inputs += pos_embeds
         output = inputs
         for encoder in self.encoders:
