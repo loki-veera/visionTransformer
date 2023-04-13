@@ -20,7 +20,7 @@ To counter overfitting, L2 penalty is applied with Adam optimizer with decay val
 ## Results
 | Dataset | Accuracy | #Epochs |
 |---------|----------|---------|
-| MNIST   |   92%    |   30    |
+| MNIST   |   95%    |   30    |
 
 ## References
 1. Dosovitskiy, Alexey, et al. "An image is worth 16x16 words: Transformers for image recognition at scale." arXiv preprint arXiv:2010.11929 (2020).
