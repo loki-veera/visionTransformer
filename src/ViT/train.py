@@ -11,19 +11,26 @@ from .model.vit import ViT
 
 
 def create_patches(batch: torch.Tensor, patch_res: int) -> torch.Tensor:
-    """Compute the patches of the batch.
+    """Split the image into patches.
 
     Args:
-        batch (torch.tensor): Tensor containing the batch of images.
-        patch_res (int, optional): Resolution of each patch.
+        batch (torch.Tensor): Batch of images.
+        patch_res (int): Resolution of each patch.
 
     Returns:
-        torch.tensor: Tensor containing the patches of each image.
+        torch.Tensor: Patched images.
     """
     bs, channels, height, width = batch.shape
     num_patches = (height * width) // (patch_res**2)
-    patch_size = (patch_res**2) * channels
-    return torch.reshape(batch, (bs, num_patches, patch_size))
+    patches = torch.zeros(bs, num_patches, patch_res**2 * channels)
+    for bidx, img in enumerate(batch):
+        idx = 0
+        for column in range(0, height, patch_res):
+            for row in range(0, width, patch_res):
+                patch = img[:, row : row + patch_res, column : column + patch_res]
+                patches[bidx, idx, :] = patch.flatten()
+                idx += 1
+    return patches
 
 
 def evaluate(
@@ -51,8 +58,8 @@ def evaluate(
     total_imgs = 0
     with torch.no_grad():
         for data, target in loader:
-            data, target = data.to(device), target.to(device)
             data = create_patches(data, patch_res)
+            data, target = data.to(device), target.to(device)
             preds = model(data)
             test_loss += loss(preds, target).item()
             correct += torch.sum(torch.argmax(preds, dim=1) == target).item()
@@ -87,9 +94,9 @@ def train(
     total_loss = 0.0
     total_imgs = 0
     for img, labels in tqdm(loader, total=len(list(loader))):
-        img = img.to(device)
         labels = labels.to(device)
         img = create_patches(img, patch_res)
+        img = img.to(device)
         optimizer.zero_grad()
 
         pred = model(img)
